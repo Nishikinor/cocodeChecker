@@ -5,6 +5,9 @@ import argparse
 
 
 def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
+    '''Get cpp source files from directory
+    Returns: list[Pathobj]
+    '''
     p = pathlib.Path(dirname)
     filelist = []
     for path in p.glob(r'**/*'):
@@ -13,10 +16,28 @@ def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c
     
     return filelist
 
-def cppparser(filename, new_flag):
-    f = open(filename, 'r+')
+def remove_comments(filehandle, location):
+    '''Remove the comment according to the location of the file.
+    param filehandle: Python's file object
+    param location: Sourcelocation, provided by libclang
+    '''
+    file_content = filehandle.read()
+    comment_pattern = re.compile(r'\/{2,}.*|\/\*[\s\S]+?\*\/')  # Single match
+    
+    offset = location.offset
+    filehandle.seek(offset)
+    new_content = filehandle.read()
+    
+    match = re.search(comment_pattern, new_content)
+    if match:
+        pass
+        # TODO: replace the pattern content accrocding to regex expression.
+        
+
+def cppparser(filepath):
+    f = open(filepath, 'r+')
     idx = clang.cindex.Index.create()
-    raw_tu = idx.parse(filename, args=['-std=c++11'])
+    raw_tu = idx.parse(filepath, args=['-std=c++11'])
     raw_tu_tokens = raw_tu.get_tokens(extent=raw_tu.cursor.extent)
     zh_cn_pattern = r"[\u4e00-\u9fa5]"
     
@@ -44,7 +65,6 @@ def cppparser(filename, new_flag):
                                unsaved_files=[('tmp.cpp', comment_content)],
                                options=0
         )
-        comment_location = r_t.location
         
         isEnglishComment = 0
         isidfr = lambda x: x == "IDENTIFIER"
@@ -65,24 +85,22 @@ def cppparser(filename, new_flag):
             continue
         
         else:
-            if new_flag == 1:    
-                new_file = "new_" + filename
-                with open(new_file, "w") as new_f:
-                    pass
-            else:
-                pass
+            new_file = filepath.parent / pathlib.Path('new_'+filepath.name)
+            comment_location = r_t.location
+            with open(new_file, "w") as new_f:
+                remove_comments(new_f, comment_location)
         
     
     f.close()
     
-def run(dirname=None, filename=None, new_flag=1):
+def run(dirname=None, filename=None):
     clang.cindex.Config.set_library_file("D:\Project\cocodeRemover\libclang.dll")
     if dirname:
         sourcefileList = getfiles_fromdir(dirname)
         for sourcefile in sourcefileList:
-            cppparser(sourcefile, new_flag)
+            cppparser(sourcefile)
     if filename:
-        cppparser(filename, new_flag)
+        cppparser(filename)
     
 
 if __name__ == "__main__":
@@ -97,15 +115,9 @@ if __name__ == "__main__":
                            help="A single file for us to process"
     )
     
-    argparser.add_argument('--newflag',
-                            default=1,
-                            nargs='?',
-                            help="Whether to generate new file based on source code"
-    )
-    
     args = argparser.parse_args()
     if args.dir:
-        run(dirname=args.dir, new_flag=args.newflag)
+        run(dirname=args.dir)
         
     elif args.file:
-        run(filename=args.file, new_flag=args.new_flag)
+        run(filename=args.file)
