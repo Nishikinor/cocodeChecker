@@ -1,12 +1,10 @@
-
-
 import pathlib
 import clang.cindex
 import re
 import argparse
 
 
-def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h'}):
+def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
     p = pathlib.Path(dirname)
     filelist = []
     for path in p.glob(r'**/*'):
@@ -15,10 +13,10 @@ def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h'}):
     
     return filelist
 
-def cppparser(filename):
-    f = open(filename, 'r')
+def cppparser(filename, new_flag):
+    f = open(filename, 'r+')
     idx = clang.cindex.Index.create()
-    raw_tu = idx.parse(filename)
+    raw_tu = idx.parse(filename, args=['-std=c++11'])
     raw_tu_tokens = raw_tu.get_tokens(extent=raw_tu.cursor.extent)
     zh_cn_pattern = r"[\u4e00-\u9fa5]"
     
@@ -41,11 +39,13 @@ def cppparser(filename):
             comment_content = comment_content.rstrip("*/")
             
         idx_comment = clang.cindex.Index.create()
-        tu = idx_comment.parse('tmp.cpp', 
+        tu = idx_comment.parse('tmp.cpp',
                                args=['-std=c++11'], 
                                unsaved_files=[('tmp.cpp', comment_content)],
                                options=0
         )
+        comment_location = r_t.location
+        
         isEnglishComment = 0
         isidfr = lambda x: x == "IDENTIFIER"
         kindname_list = []
@@ -65,8 +65,47 @@ def cppparser(filename):
             continue
         
         else:
-            
-            
-            
+            if new_flag == 1:    
+                new_file = "new_" + filename
+                with open(new_file, "w") as new_f:
+                    pass
+            else:
+                pass
+        
     
     f.close()
+    
+def run(dirname=None, filename=None, new_flag=1):
+    clang.cindex.Config.set_library_file("D:\Project\cocodeRemover\libclang.dll")
+    if dirname:
+        sourcefileList = getfiles_fromdir(dirname)
+        for sourcefile in sourcefileList:
+            cppparser(sourcefile, new_flag)
+    if filename:
+        cppparser(filename, new_flag)
+    
+
+if __name__ == "__main__":
+    argparser = argparse.ArgumentParser("Remove the comment-out cpp code")
+    argparser.add_argument('--dir',
+                           default='tests',
+                           nargs='?',
+                           help="Name of directory for us to process"
+    )
+    
+    argparser.add_argument('--file',
+                           help="A single file for us to process"
+    )
+    
+    argparser.add_argument('--newflag',
+                            default=1,
+                            nargs='?',
+                            help="Whether to generate new file based on source code"
+    )
+    
+    args = argparser.parse_args()
+    if args.dir:
+        run(dirname=args.dir, new_flag=args.newflag)
+        
+    elif args.file:
+        run(filename=args.file, new_flag=args.new_flag)
