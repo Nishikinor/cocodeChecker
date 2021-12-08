@@ -75,8 +75,15 @@ def cppparser(filepath):
             #print(f"t_kindname = {t.kind.name}, t_spelling = {t.spelling}")
             
         length = len(kindname_list)
+        
+        if length == 1 and kindname_list[0] == 'PUNCTUATION':
+            comment_text = r_t.spelling
+            comment_list.append(comment_text)
+        
+        
         if length <= 2:
             continue
+        
             
         for i in range(length - 2):
             # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
