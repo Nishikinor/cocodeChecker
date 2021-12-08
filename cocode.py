@@ -25,6 +25,8 @@ def remove_comments(filepath, comment_list):
     
     with open(filepath, 'w') as wfilehandle:
         for comment_text in comment_list:
+            if "\r\n" in comment_text:
+                comment_text = comment_text.replace('\r\n', '\n')
             file_content = file_content.replace(comment_text, '')
             
         wfilehandle.write(file_content)
