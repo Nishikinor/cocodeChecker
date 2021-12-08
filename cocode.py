@@ -13,14 +13,7 @@ def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c
         if path.suffix in extensions:
             filelist.append(path)
     
-    return filelist
-
-def get_remove_comment(filepath, location):
-    '''Get the comment content which should be removed from the source file.
-    param filepath: Source code filepath
-    param location: Sourcelocation, provided by libclang
-    '''
-    
+    return filelist    
     
 def remove_comments(filepath, comment_list):
     '''Remove the specfied comments in filepath
@@ -71,17 +64,26 @@ def cppparser(filepath):
         
         isEnglishComment = 0
         isidfr = lambda x: x == "IDENTIFIER"
+        isliteral = lambda x: x == "LITERAL"
         kindname_list = []
         tu_tokens = tu.get_tokens(extent=tu.cursor.extent)
-        
+                
         for t in tu_tokens:
             kindname_list.append(t.kind.name)
-            print(f"t_kindname = {t.kind.name}, t_spelling = {t.spelling}")
+            #print(f"t_kindname = {t.kind.name}, t_spelling = {t.spelling}")
             
-        for i in range(len(kindname_list) - 2):
+        length = len(kindname_list)
+        if length <= 2:
+            continue
+            
+        for i in range(length - 2):
             # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
             # FIXME: Wrong judgment in comment "for >32 bit machines"
-            if isidfr(kindname_list[i]) and isidfr(kindname_list[i+1]) and isidfr(kindname_list[i+2]):
+            #        Error check in block code comment
+            if isidfr(kindname_list[i]) and isidfr(kindname_list[i+2]) and (isidfr(kindname_list[i+1]) or isliteral(kindname_list[i+1])):
+                isEnglishComment = 1
+                break
+            elif isidfr(kindname_list[i]) and isliteral(kindname_list[i+1]) and isidfr(kindname_list[i+2]):
                 isEnglishComment = 1
                 break
                 
@@ -92,9 +94,7 @@ def cppparser(filepath):
             comment_text = r_t.spelling
             comment_list.append(comment_text)
             
-            remove_comments(filepath, comment_list)
-        
-
+    remove_comments(filepath, comment_list)
     
 def run(dirname=None, filename=None):
     clang.cindex.Config.set_library_file("D:\Project\cocodeRemover\libclang.dll")
