@@ -3,7 +3,6 @@ import clang.cindex
 import re
 import argparse
 
-
 def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
     '''Get cpp source files from directory
     Returns: list[Pathobj]
@@ -16,30 +15,34 @@ def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c
     
     return filelist
 
-def remove_comments(filehandle, location):
-    '''Remove the comment according to the location of the file.
-    param filehandle: Python's file object
+def get_remove_comment(filepath, location):
+    '''Get the comment content which should be removed from the source file.
+    param filepath: Source code filepath
     param location: Sourcelocation, provided by libclang
     '''
-    file_content = filehandle.read()
-    comment_pattern = re.compile(r'\/{2,}.*|\/\*[\s\S]+?\*\/')  # Single match
     
-    offset = location.offset
-    filehandle.seek(offset)
-    new_content = filehandle.read()
     
-    match = re.search(comment_pattern, new_content)
-    if match:
-        pass
-        # TODO: replace the pattern content accrocding to regex expression.
+def remove_comments(filepath, comment_list):
+    '''Remove the specfied comments in filepath
+    param filepath: Source code filepath
+    param comment_list: List of comments to be removed from source code.
+    '''
+    with open(filepath, 'r') as filehandle:
+        file_content = filehandle.read()
+    
+    with open(filepath, 'w') as wfilehandle:
+        for comment_text in comment_list:
+            file_content = file_content.replace(comment_text, '')
+            
+        wfilehandle.write(file_content)
         
 
 def cppparser(filepath):
-    f = open(filepath, 'r+')
     idx = clang.cindex.Index.create()
     raw_tu = idx.parse(filepath, args=['-std=c++11'])
     raw_tu_tokens = raw_tu.get_tokens(extent=raw_tu.cursor.extent)
     zh_cn_pattern = r"[\u4e00-\u9fa5]"
+    comment_list = []
     
     for r_t in raw_tu_tokens:
         if r_t.kind.name != "COMMENT":
@@ -75,8 +78,9 @@ def cppparser(filepath):
             kindname_list.append(t.kind.name)
             print(f"t_kindname = {t.kind.name}, t_spelling = {t.spelling}")
             
-        for i in range(len(kindname_list) - 3):
+        for i in range(len(kindname_list) - 2):
             # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
+            # FIXME: Wrong judgment in comment "for >32 bit machines"
             if isidfr(kindname_list[i]) and isidfr(kindname_list[i+1]) and isidfr(kindname_list[i+2]):
                 isEnglishComment = 1
                 break
@@ -85,13 +89,12 @@ def cppparser(filepath):
             continue
         
         else:
-            new_file = filepath.parent / pathlib.Path('new_'+filepath.name)
-            comment_location = r_t.location
-            with open(new_file, "w") as new_f:
-                remove_comments(new_f, comment_location)
+            comment_text = r_t.spelling
+            comment_list.append(comment_text)
+            
+            remove_comments(filepath, comment_list)
         
-    
-    f.close()
+
     
 def run(dirname=None, filename=None):
     clang.cindex.Config.set_library_file("D:\Project\cocodeRemover\libclang.dll")
