@@ -1,3 +1,3 @@
 # cocodeRemover
 
-Remove Commented-out code in cpp files.
+Remove the commented-out code in cpp source files.
