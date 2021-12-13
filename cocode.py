@@ -2,6 +2,7 @@ import pathlib
 import clang.cindex
 import re
 import argparse
+import xml.etree.ElementTree as ET
 
 def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
     '''Get cpp source files from directory
@@ -30,7 +31,26 @@ def remove_comments(filepath, comment_list):
             file_content = file_content.replace(comment_text, '')
             
         wfilehandle.write(file_content)
-        
+
+def dumpxml(xmlname):
+    '''TODO:Dump the xml file according to the format of cppcheck
+    '''
+    
+    
+    
+    
+def addtoxml(xmlname):
+    '''TODO:Add the content to a exists xml file according to the format of cppcheck
+    '''
+    
+    if not pathlib.exists(xmlname):
+        raise FileNotFoundError(f"Can't find the xml file: {xmlname}")
+    
+    
+    
+    
+def writexml(xmlname, mode):
+    pass
 
 def cppparser(filepath):
     idx = clang.cindex.Index.create()
@@ -102,17 +122,25 @@ def cppparser(filepath):
         else:
             comment_text = r_t.spelling
             comment_list.append(comment_text)
-            
-    remove_comments(filepath, comment_list)
+        
+
+                    
     
-def run(dirname=None, filename=None):
-    clang.cindex.Config.set_library_file("D:\Project\cocodeRemover\libclang.dll")
+def run(args):
+    clang.cindex.Config.set_library_file("libclang.dll")
+    dirname = args.dirname
+    filename = args.filename
+    dumpxml = args.dump_xml
+    addxml = args.add_xml
+    removecode = args.remove_cocode
+    
     if dirname:
         sourcefileList = getfiles_fromdir(dirname)
         for sourcefile in sourcefileList:
             cppparser(sourcefile)
-    if filename:
+    elif filename:
         cppparser(filename)
+        
     
 
 if __name__ == "__main__":
@@ -120,16 +148,26 @@ if __name__ == "__main__":
     argparser.add_argument('--dir',
                            default='tests',
                            nargs='?',
-                           help="Name of directory for us to process"
+                           help="Name of directory for us to process."
     )
     
     argparser.add_argument('--file',
-                           help="A single file for us to process"
+                           help="A single file for us to process."
+    )
+    argparser.add_argument('--dump_xml',
+                           default="result.xml",
+                           nargs='?',
+                           help="Dump the result into a xml file according to the format of cppcheck."
+    )
+    argparser.add_argument('--add_xml',
+                            default="cppcheck.xml",
+                            nargs='?',
+                            help="Add the scan result into the exists xml file."
+    )
+    
+    argparser.add_argument('--remove_cocode',
+                           help="Remove the comment-out cpp code in source file."
     )
     
     args = argparser.parse_args()
-    if args.dir:
-        run(dirname=args.dir)
-        
-    elif args.file:
-        run(filename=args.file)
+    run(args=args)

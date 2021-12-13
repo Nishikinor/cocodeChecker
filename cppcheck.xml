@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results version="2">
+    <cppcheck version="1.90"/>
+    <errors>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;sys_pModule&apos; is assigned a value that is never used." verbose="Variable &apos;sys_pModule&apos; is assigned a value that is never used." cwe="563">
+            <location file="SI3D_Addin_ZW3DCAD/SI3DForAddin_ZW3DCAD.cpp" line="170" column="19"/>
+            <symbol>sys_pModule</symbol>
+        </error>
+        <error id="uselessAssignmentPtrArg" severity="warning" msg="Assignment of function parameter has no effect outside the function. Did you forget dereferencing it?" verbose="Assignment of function parameter has no effect outside the function. Did you forget dereferencing it?" cwe="398">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="94" column="2"/>
+        </error>
+        <error id="variableScope" severity="style" msg="The scope of the variable &apos;m&apos; can be reduced." verbose="The scope of the variable &apos;m&apos; can be reduced. Warning: Be careful when fixing this message, especially when there are inner loops. Here is an example where cppcheck will write that the scope for &apos;i&apos; can be reduced:\012void f(int x)\012{\012    int i = 0;\012    if (x) {\012        // it&apos;s safe to move &apos;int i = 0;&apos; here\012        for (int n = 0; n &lt; 10; ++n) {\012            // it is possible but not safe to move &apos;int i = 0;&apos; here\012            do_something(&amp;i);\012        }\012    }\012}\012When you see this message it is always safe to reduce the variable scope 1 level." cwe="398">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="436" column="7"/>
+            <symbol>m</symbol>
+        </error>
+        <error id="uninitdata" severity="error" msg="Memory is allocated but not initialized: edges" verbose="Memory is allocated but not initialized: edges" cwe="908">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="392" column="25"/>
+            <symbol>edges</symbol>
+        </error>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;pSKetch&apos; is assigned a value that is never used." verbose="Variable &apos;pSKetch&apos; is assigned a value that is never used." cwe="563">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="94" column="10"/>
+            <symbol>pSKetch</symbol>
+        </error>
+        <error id="syntaxError" severity="error" msg="syntax error" verbose="syntax error">
+            <location file="doc/预研开发参考资料v20720/参考代码/SI3DForAddin.cpp" line="225" column="59"/>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;CmdMacro&apos; is never used." verbose="The function &apos;CmdMacro&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="17" column="0"/>
+            <symbol>CmdMacro</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;FileActive&apos; is never used." verbose="The function &apos;FileActive&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/FileOperations.cpp" line="3" column="0"/>
+            <symbol>FileActive</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;FileClose&apos; is never used." verbose="The function &apos;FileClose&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/FileOperations.cpp" line="41" column="0"/>
+            <symbol>FileClose</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;FileImport&apos; is never used." verbose="The function &apos;FileImport&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/FileOperations.cpp" line="22" column="0"/>
+            <symbol>FileImport</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;FileOpen&apos; is never used." verbose="The function &apos;FileOpen&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/FileOperations.cpp" line="13" column="0"/>
+            <symbol>FileOpen</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;GetActiveEntityId&apos; is never used." verbose="The function &apos;GetActiveEntityId&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="58" column="0"/>
+            <symbol>GetActiveEntityId</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;GetFacesNum&apos; is never used." verbose="The function &apos;GetFacesNum&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="75" column="0"/>
+            <symbol>GetFacesNum</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;GetRootId&apos; is never used." verbose="The function &apos;GetRootId&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="40" column="0"/>
+            <symbol>GetRootId</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;GetRootObjName&apos; is never used." verbose="The function &apos;GetRootObjName&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="53" column="0"/>
+            <symbol>GetRootObjName</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;PartRevolve&apos; is never used." verbose="The function &apos;PartRevolve&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/EntityOperations.cpp" line="3" column="0"/>
+            <symbol>PartRevolve</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_Addin_ZW3DCADExit&apos; is never used." verbose="The function &apos;SI3D_Addin_ZW3DCADExit&apos; is never used." cwe="561">
+            <location file="SI3D_Addin_ZW3DCAD/SI3DForAddin_ZW3DCAD.cpp" line="36" column="0"/>
+            <symbol>SI3D_Addin_ZW3DCADExit</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_Addin_ZW3DCADInit&apos; is never used." verbose="The function &apos;SI3D_Addin_ZW3DCADInit&apos; is never used." cwe="561">
+            <location file="SI3D_Addin_ZW3DCAD/SI3DForAddin_ZW3DCAD.cpp" line="23" column="0"/>
+            <symbol>SI3D_Addin_ZW3DCADInit</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_add_sketch_items_Ring&apos; is never used." verbose="The function &apos;SI3D_MODL_add_sketch_items_Ring&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="275" column="0"/>
+            <symbol>SI3D_MODL_add_sketch_items_Ring</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_add_sketch_items_from_skt&apos; is never used." verbose="The function &apos;SI3D_MODL_add_sketch_items_from_skt&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="98" column="0"/>
+            <symbol>SI3D_MODL_add_sketch_items_from_skt</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_Block&apos; is never used." verbose="The function &apos;SI3D_MODL_create_Block&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="284" column="0"/>
+            <symbol>SI3D_MODL_create_Block</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_Bool&apos; is never used." verbose="The function &apos;SI3D_MODL_create_Bool&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="336" column="0"/>
+            <symbol>SI3D_MODL_create_Bool</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_Cylinder&apos; is never used." verbose="The function &apos;SI3D_MODL_create_Cylinder&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="319" column="0"/>
+            <symbol>SI3D_MODL_create_Cylinder</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_Revolution&apos; is never used." verbose="The function &apos;SI3D_MODL_create_Revolution&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="356" column="0"/>
+            <symbol>SI3D_MODL_create_Revolution</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_extrusion2&apos; is never used." verbose="The function &apos;SI3D_MODL_create_extrusion2&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="208" column="0"/>
+            <symbol>SI3D_MODL_create_extrusion2</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_fillet&apos; is never used." verbose="The function &apos;SI3D_MODL_create_fillet&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="468" column="0"/>
+            <symbol>SI3D_MODL_create_fillet</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_sketch&apos; is never used." verbose="The function &apos;SI3D_MODL_create_sketch&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="81" column="0"/>
+            <symbol>SI3D_MODL_create_sketch</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_sketch2&apos; is never used." verbose="The function &apos;SI3D_MODL_create_sketch2&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="232" column="0"/>
+            <symbol>SI3D_MODL_create_sketch2</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_MODL_create_sketch_bywcs&apos; is never used." verbose="The function &apos;SI3D_MODL_create_sketch_bywcs&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="252" column="0"/>
+            <symbol>SI3D_MODL_create_sketch_bywcs</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_Part_create&apos; is never used." verbose="The function &apos;SI3D_Part_create&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="9" column="0"/>
+            <symbol>SI3D_Part_create</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_Part_save_close&apos; is never used." verbose="The function &apos;SI3D_Part_save_close&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="52" column="0"/>
+            <symbol>SI3D_Part_save_close</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_Part_save_stp&apos; is never used." verbose="The function &apos;SI3D_Part_save_stp&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="64" column="0"/>
+            <symbol>SI3D_Part_save_stp</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_add_sketch_cir&apos; is never used." verbose="The function &apos;SI3D_add_sketch_cir&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="307" column="0"/>
+            <symbol>SI3D_add_sketch_cir</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_get_Body_Face_Loops&apos; is never used." verbose="The function &apos;SI3D_get_Body_Face_Loops&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="385" column="0"/>
+            <symbol>SI3D_get_Body_Face_Loops</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SI3D_get_Feat_Body_ID&apos; is never used." verbose="The function &apos;SI3D_get_Feat_Body_ID&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SI3DPubFun.cpp" line="375" column="0"/>
+            <symbol>SI3D_get_Feat_Body_ID</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SkBlank&apos; is never used." verbose="The function &apos;SkBlank&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="8" column="0"/>
+            <symbol>SkBlank</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;SketchExit&apos; is never used." verbose="The function &apos;SketchExit&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SketchOperations.cpp" line="36" column="0"/>
+            <symbol>SketchExit</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;ZW3DGlobalSet&apos; is never used." verbose="The function &apos;ZW3DGlobalSet&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="31" column="0"/>
+            <symbol>ZW3DGlobalSet</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;ZW3DMemFree&apos; is never used." verbose="The function &apos;ZW3DMemFree&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="71" column="0"/>
+            <symbol>ZW3DMemFree</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;ZW3DReport&apos; is never used." verbose="The function &apos;ZW3DReport&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="3" column="0"/>
+            <symbol>ZW3DReport</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;activeSketch&apos; is never used." verbose="The function &apos;activeSketch&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SketchOperations.cpp" line="27" column="0"/>
+            <symbol>activeSketch</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;cmdSend&apos; is never used." verbose="The function &apos;cmdSend&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="86" column="0"/>
+            <symbol>cmdSend</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;makeSkCir&apos; is never used." verbose="The function &apos;makeSkCir&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SketchOperations.cpp" line="16" column="0"/>
+            <symbol>makeSkCir</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;makeSkLine&apos; is never used." verbose="The function &apos;makeSkLine&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/SketchOperations.cpp" line="3" column="0"/>
+            <symbol>makeSkLine</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;zw3dPrint&apos; is never used." verbose="The function &apos;zw3dPrint&apos; is never used." cwe="561">
+            <location file="SI3D_PubFun_ZW3DCAD/Tools.cpp" line="26" column="0"/>
+            <symbol>zw3dPrint</symbol>
+        </error>
+        <error id="missingInclude" severity="information" msg="Cppcheck cannot find all the include files (use --check-config for details)" verbose="Cppcheck cannot find all the include files. Cppcheck can check the code without the include files found. But the results will probably be more accurate if all the include files are found. Please check your project&apos;s include directories and add all of them as include directories for Cppcheck. To see what files Cppcheck cannot find use --check-config."/>
+    </errors>
+</results>
