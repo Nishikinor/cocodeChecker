@@ -3,10 +3,14 @@ import clang.cindex
 import argparse
 import xml.etree.ElementTree as ET
 import sys
+import re
 import platform
 from xml.dom import minidom
 from collections import defaultdict
 
+
+#TODO: Now this module can only process the current working directory.
+#      The next step is to support the use of arbitrary paths
 CocodeContainer = defaultdict(list) # k-v type: {filename: list[tuple(line, column)]}
 
 def getfiles_fromdir(dirname: str, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
@@ -26,6 +30,7 @@ def remove_comments(filepath, comment_list):
     '''Remove the specfied comments in filepath
     param filepath: String
     param comment_list: list[Pathobj]
+    TODO: refactor this method.
     '''
     with open(filepath, 'r') as filehandle:
         file_content = filehandle.read()
@@ -41,6 +46,38 @@ def remove_comments(filepath, comment_list):
 def getlineandcolumn(loc: clang.cindex.SourceLocation):
     return loc.line, loc.column
 
+def generate_childnodes(root, container):
+    
+    err_attr = {
+        "id": "CommentedoutCode",
+        "severity": "style",
+        "msg": "Section of code should not be commented out.",
+        "verbose": "Section of code should not be commented out."
+    }
+
+    for filepath, tuplelist in container.items():
+        for position in tuplelist:
+            line = position[0]
+            column = position[1]
+            loc_attr = {
+                "file": str(filepath),
+                'line': str(line),
+                'column': str(column),
+            }
+            for errors in root.iter("errors"):
+                new_error = ET.SubElement(errors, "error", err_attr)
+                ET.SubElement(new_error, "location", loc_attr)
+                
+def writefmtxml(xmlname: str, tree: ET, root: ET.Element):
+    # Save the formatted xml document by indentation spaces.
+    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
+        ET.indent(tree)
+        tree.write(xmlname)
+    else:
+        pretty_xml = minidom.parseString(ET.tostring(root)).toprettyxml(indent="    ")
+        with open(xmlname, "w") as f:
+            f.write(pretty_xml)
+
 def dumpxml(xmlname: str, container: CocodeContainer):
     '''TODO:Dump the xml file according to the format of cppcheck
     '''
@@ -49,8 +86,14 @@ def dumpxml(xmlname: str, container: CocodeContainer):
     if xmlfile.exists():
         raise OSError(f"The {xmlname} file already exists.")
     
-    tree = ET.parse(xmlname)
+    tree = ET.ElementTree("results")
+    ET.SubElement(tree, "errors")
     root = tree.getroot()
+
+    generate_childnodes(root, container)
+    writefmtxml(xmlname, tree, root)
+    
+    
     
 def addtoxml(xmlname: str, container: CocodeContainer):
     '''Add the content to a exists xml file according to the format of cppcheck
@@ -63,43 +106,9 @@ def addtoxml(xmlname: str, container: CocodeContainer):
     tree = ET.parse(xmlname)
     root = tree.getroot()
     
-    for filepath, tuplelist in container.items():
-        for postion in tuplelist:
-            line = postion[0]
-            column = postion[1]
-            loc_attr = {
-                'file': str(filepath),
-                'line': str(line), 
-                'column': str(column)
-            }
-            err_attr = {
-                "id": "CommentedoutCode",
-                "severity": "style",
-                "msg": "Section of code should not be commented out.",
-                "verbose": "Section of code should not be commented out."
-            }
-            for errors in root.iter("errors"):
-                new_error = ET.SubElement(errors, "error", err_attr)
-                new_location = ET.SubElement(new_error, "location", loc_attr)
-    
-    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
-        saveFormattedXml(tree, "output.xml")
-    else:
-        pretty_xml = minidom.parseString(ET.tostring(root)).toprettyxml(indent="    ")
-        with open("output.xml", "w") as f:
-            f.write(pretty_xml)
+    generate_childnodes(root, container)
+    writefmtxml(xmlname, tree, root)
         
-
-def saveFormattedXml(ETtree, filepath):
-    """Save the formatted xml document by indentation space.
-    
-    """
-    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
-        ET.indent(ETtree)
-        ETtree.write(filepath)
-    else:
-        raise Exception("This program are only supported on python version >= 3.9")
-
 
 def cppparser(filepath: str) -> CocodeContainer:
     '''Parse the comment section of a cpp source file.
@@ -118,7 +127,11 @@ def cppparser(filepath: str) -> CocodeContainer:
             comment_content = r_t.spelling
         except UnicodeDecodeError:
             continue
-                    
+        
+        match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
+        if match:
+            continue
+        
         if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
             comment_content = comment_content.lstrip('//')
         
@@ -141,12 +154,11 @@ def cppparser(filepath: str) -> CocodeContainer:
                 
         for t in tu_tokens:
             kindname_list.append(t.kind.name)
-            #print(f"t_kindname = {t.kind.name}, t_spelling = {t.spelling}")
             
         length = len(kindname_list)
         
         if length == 1 and kindname_list[0] == 'PUNCTUATION':
-            # Single line for 
+            # Single line
             comment_text = r_t.spelling
             line, column = getlineandcolumn(r_t.location)
             
@@ -154,7 +166,6 @@ def cppparser(filepath: str) -> CocodeContainer:
             
             comment_list.append(comment_text)
             continue
-        
         if length <= 2:
             continue
         
@@ -190,8 +201,8 @@ def run(args: argparse.ArgumentParser):
         clang.cindex.Config.set_library_file("/usr/lib/x86_64-linux-gnu/libclang-10.so.1")
     dirname = args.dir
     filename = args.file
-    dump_xml = args.dump_xml
-    addxml = args.add_xml
+    dump_xmlname = args.dump_xml
+    addxml_name = args.add_xml
     removecode = args.remove_cocode
     
     if dirname:
@@ -204,11 +215,11 @@ def run(args: argparse.ArgumentParser):
     elif filename:
         container = cppparser(filename)
     
-    if dump_xml:
-        dumpxml(dump_xml, container)
+    if dump_xmlname:
+        dumpxml(dump_xmlname, container)
     
-    elif addxml:
-        addtoxml(addxml, container)
+    elif addxml_name:
+        addtoxml(addxml_name, container)
         
     # TODO: modify the argument transfer method.
     else:
@@ -219,11 +230,11 @@ if __name__ == "__main__":
     argparser.add_argument('--dir',
                            default='.',
                            nargs='?',
-                           help="Name of directory for us to process."
+                           help="Name of directory to process."
     )
     
     argparser.add_argument('--file',
-                           help="A single file for us to process."
+                           help="A single file to process."
     )
     argparser.add_argument('--dump_xml',
                            help="Dump the result into a xml file according to the format of cppcheck."
@@ -238,5 +249,3 @@ if __name__ == "__main__":
     
     args = argparser.parse_args()
     run(args=args)
-    
-    
