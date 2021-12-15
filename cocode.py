@@ -1,16 +1,15 @@
-from locale import locale_alias
 import pathlib
 import clang.cindex
-import re
 import argparse
 import xml.etree.ElementTree as ET
+import sys
+import platform
+from xml.dom import minidom
 from collections import defaultdict
-
-#TODO: xml formatter
 
 CocodeContainer = defaultdict(list) # k-v type: {filename: list[tuple(line, column)]}
 
-def getfiles_fromdir(dirname: str, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}) -> list[pathlib.Path]:
+def getfiles_fromdir(dirname: str, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
     '''Get cpp source files from directory
     Returns: list[Pathobj]
     '''
@@ -23,8 +22,10 @@ def getfiles_fromdir(dirname: str, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx
     return filelist   
 
     
-def remove_comments(filepath: str, comment_list: list[pathlib.Path]):
+def remove_comments(filepath, comment_list):
     '''Remove the specfied comments in filepath
+    param filepath: String
+    param comment_list: list[Pathobj]
     '''
     with open(filepath, 'r') as filehandle:
         file_content = filehandle.read()
@@ -52,7 +53,7 @@ def dumpxml(xmlname: str, container: CocodeContainer):
     root = tree.getroot()
     
 def addtoxml(xmlname: str, container: CocodeContainer):
-    '''TODO:Add the content to a exists xml file according to the format of cppcheck
+    '''Add the content to a exists xml file according to the format of cppcheck
     '''
     xmlfile = pathlib.Path(xmlname)
     
@@ -81,10 +82,24 @@ def addtoxml(xmlname: str, container: CocodeContainer):
                 new_error = ET.SubElement(errors, "error", err_attr)
                 new_location = ET.SubElement(new_error, "location", loc_attr)
     
-    # Save the formatted xml.
-    ET.indent(tree)
-    tree.write('output.xml')
+    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
+        saveFormattedXml(tree, "output.xml")
+    else:
+        pretty_xml = minidom.parseString(ET.tostring(root)).toprettyxml(indent="    ")
+        with open("output.xml", "w") as f:
+            f.write(pretty_xml)
+        
+
+def saveFormattedXml(ETtree, filepath):
+    """Save the formatted xml document by indentation space.
     
+    """
+    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
+        ET.indent(ETtree)
+        ETtree.write(filepath)
+    else:
+        raise Exception("This program are only supported on python version >= 3.9")
+
 
 def cppparser(filepath: str) -> CocodeContainer:
     '''Parse the comment section of a cpp source file.
@@ -92,7 +107,6 @@ def cppparser(filepath: str) -> CocodeContainer:
     idx = clang.cindex.Index.create()
     raw_tu = idx.parse(filepath, args=['-std=c++11'])
     raw_tu_tokens = raw_tu.get_tokens(extent=raw_tu.cursor.extent)
-    zh_cn_pattern = r"[\u4e00-\u9fa5]"
     comment_list = []
     cocode_container = defaultdict(list)
     
@@ -100,11 +114,11 @@ def cppparser(filepath: str) -> CocodeContainer:
         if r_t.kind.name != "COMMENT":
             continue
         
-        comment_content = r_t.spelling
-        zhcn_match = re.search(zh_cn_pattern, comment_content)
-        if zhcn_match:
+        try:
+            comment_content = r_t.spelling
+        except UnicodeDecodeError:
             continue
-        
+                    
         if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
             comment_content = comment_content.lstrip('//')
         
@@ -170,7 +184,10 @@ def cppparser(filepath: str) -> CocodeContainer:
         #remove_comments(filepath, comment_list)
 
 def run(args: argparse.ArgumentParser):
-    clang.cindex.Config.set_library_file("D:\\Project\\cocodeRemover\\libclang.dll")
+    if platform.system() == "Windows":
+        clang.cindex.Config.set_library_file("C:\\Program Files\\LLVM\\bin\\libclang.dll")
+    elif platform.system() == "Linux":
+        clang.cindex.Config.set_library_file("/usr/lib/x86_64-linux-gnu/libclang-10.so.1")
     dirname = args.dir
     filename = args.file
     dump_xml = args.dump_xml
@@ -200,7 +217,7 @@ def run(args: argparse.ArgumentParser):
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser("Remove the comment-out cpp code")
     argparser.add_argument('--dir',
-                           default='tests',
+                           default='.',
                            nargs='?',
                            help="Name of directory for us to process."
     )
