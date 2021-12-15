@@ -80,7 +80,9 @@ def addtoxml(xmlname: str, container: CocodeContainer):
             for errors in root.iter("errors"):
                 new_error = ET.SubElement(errors, "error", err_attr)
                 new_location = ET.SubElement(new_error, "location", loc_attr)
-        
+    
+    # Save the formatted xml.
+    ET.indent(tree)
     tree.write('output.xml')
     
 
@@ -146,7 +148,6 @@ def cppparser(filepath: str) -> CocodeContainer:
         for i in range(length - 2):
             # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
             # FIXME: Wrong judgment in comment "for >32 bit machines"
-            #        Error check in block code comment
             if isidfr(kindname_list[i]) and isidfr(kindname_list[i+2]) and (isidfr(kindname_list[i+1]) or isliteral(kindname_list[i+1])):
                 isEnglishComment = 1
                 break
