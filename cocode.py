@@ -45,7 +45,6 @@ def getlineandcolumn(loc: clang.cindex.SourceLocation):
 
 def generate_childnodes(root, container):
     global args
-        
     err_attr = {
         "id": "CommentedoutCode",
         "severity": "style",
@@ -53,14 +52,14 @@ def generate_childnodes(root, container):
         "verbose": "Section of code should not be commented out."
     }
     
-
     for filepath, tuplelist in container.items():
         if args.dir:
             # mode: dir
             dirpath = pathlib.Path(args.dir)
             filepath = pathlib.Path(filepath)
             filepath = filepath.relative_to(dirpath)
-            
+
+    for filepath, tuplelist in container.items():
         for position in tuplelist:
             line = position[0]
             column = position[1]
@@ -102,6 +101,7 @@ def dumpxml(xmlname: str, container: CocodeContainer):
 
     generate_childnodes(result, container)
     writefmtxml(xmlname, result)
+
     
     
     
@@ -121,6 +121,7 @@ def addtoxml(xmlname: str, container: CocodeContainer):
         
 
 def cppparser(filename: str) -> CocodeContainer:
+
     '''Parse the comment section of a cpp source file.
     '''
     idx = clang.cindex.Index.create()
@@ -140,6 +141,7 @@ def cppparser(filename: str) -> CocodeContainer:
         
         noascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
         if noascii_match:
+
             continue
         
         if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
