@@ -41,7 +41,9 @@ def remove_comments(filepath, comment_list):
 def getlineandcolumn(loc: clang.cindex.SourceLocation):
     return loc.line, loc.column
 
-def generate_childnodes(root, container):
+def generate_childnodes(root: ET.Element, container: CocodeContainer):
+    """Generates child nodes from the given root node and container.
+    """
     global args
     err_attr = {
         "id": "CommentedoutCode",
@@ -91,7 +93,7 @@ def dumpxml(xmlname: str, container: CocodeContainer):
     xmlfile = pathlib.Path(xmlname)
     
     if xmlfile.exists():
-        raise OSError(f"The {xmlname} file already exists.")
+        raise OSError(f"The {xmlname} file already exists, Please change the name of dump file or remove the file with the same name.")
     
     result = ET.Element("results")
     
@@ -216,8 +218,7 @@ def run(args: argparse.ArgumentParser):
     
     elif addxml_name:
         addtoxml(addxml_name, container)
-        
-    # TODO: modify the argument transfer method.
+                
     else:
         print("Invaild arguments. Options --help for showing help message.")
     
