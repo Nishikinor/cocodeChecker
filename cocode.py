@@ -4,10 +4,8 @@ import argparse
 import xml.etree.ElementTree as ET
 import sys
 import re
-import platform
 from xml.dom import minidom
 from collections import defaultdict
-
 
 CocodeContainer = defaultdict(list) # k-v type: {filename: list[tuple(line, column)]}
 
@@ -101,9 +99,6 @@ def dumpxml(xmlname: str, container: CocodeContainer):
 
     generate_childnodes(result, container)
     writefmtxml(xmlname, result)
-
-    
-    
     
 def addtoxml(xmlname: str, container: CocodeContainer):
     '''Add the content to a exists xml file according to the format of cppcheck
@@ -118,7 +113,6 @@ def addtoxml(xmlname: str, container: CocodeContainer):
     
     generate_childnodes(root, container)
     writefmtxml(xmlname, root)
-        
 
 def cppparser(filename: str) -> CocodeContainer:
 
@@ -127,7 +121,6 @@ def cppparser(filename: str) -> CocodeContainer:
     idx = clang.cindex.Index.create()
     raw_tu = idx.parse(filename, args=['-std=c++11'])
     raw_tu_tokens = raw_tu.get_tokens(extent=raw_tu.cursor.extent)
-    comment_list = []
     cocode_container = defaultdict(list)
     
     for r_t in raw_tu_tokens:
@@ -141,7 +134,6 @@ def cppparser(filename: str) -> CocodeContainer:
         
         noascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
         if noascii_match:
-
             continue
         
         if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
@@ -171,12 +163,9 @@ def cppparser(filename: str) -> CocodeContainer:
         
         if length == 1 and kindname_list[0] == 'PUNCTUATION':
             # Single line
-            comment_text = r_t.spelling
-            line, column = getlineandcolumn(r_t.location)
+            line, column = getlineandcolumn(r_t.location)            
+            cocode_container[filename].append((line, column))
             
-            cocode_container[filepath].append((line, column))
-            
-            comment_list.append(comment_text)
             continue
         if length <= 2:
             continue
@@ -196,19 +185,16 @@ def cppparser(filename: str) -> CocodeContainer:
             continue
         
         else:
-            comment_text = r_t.spelling
+            #comment_text = r_t.spelling
             line, column = getlineandcolumn(r_t.location)
             cocode_container[filename].append((line, column))
-            
-            comment_list.append(comment_text)
-            
+                        
     return cocode_container
 
 def run(args: argparse.ArgumentParser):
-    if platform.system() == "Windows":
-        clang.cindex.Config.set_library_file("C:\\Program Files\\LLVM\\bin\\libclang.dll")
-    elif platform.system() == "Linux":
-        clang.cindex.Config.set_library_file("/usr/lib/x86_64-linux-gnu/libclang-10.so.1")
+    from config import libclang_path
+    clang.cindex.Config.set_library_file(libclang_path)
+
     dirname = args.dir
     filename = args.file
     dump_xmlname = args.dump_xml
@@ -218,8 +204,8 @@ def run(args: argparse.ArgumentParser):
     if dirname:
         container = {}
         sourcefileList = getfiles_fromdir(dirname)
-        for sourcefile in sourcefileList:
-            cocode_container = cppparser(str(sourcefile))
+        for sourcepath in sourcefileList:
+            cocode_container = cppparser(str(sourcepath))
             container.update(cocode_container)
             
     elif filename:
