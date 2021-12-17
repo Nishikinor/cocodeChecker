@@ -88,7 +88,7 @@ def writefmtxml(xmlname: str, root: ET.Element):
             f.write(pretty_xml)
 
 def dumpxml(xmlname: str, container: CocodeContainer):
-    '''TODO:Dump the xml file according to the format of cppcheck
+    '''Dump the xml file according to the format of cppcheck
     '''
     xmlfile = pathlib.Path(xmlname)
     
