@@ -9,8 +9,9 @@ from collections import defaultdict
 
 CocodeContainer = defaultdict(list) # k-v type: {filename: list[tuple(line, column)]}
 
-def getfiles_fromdir(dirname: str, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
+def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
     '''Get cpp source files from directory
+    param dirname: Str, the name of the input directory.
     Returns: list[Pathobj]
     '''
     p = pathlib.Path(dirname)
@@ -20,7 +21,6 @@ def getfiles_fromdir(dirname: str, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx
             filelist.append(path)
     
     return filelist
-
     
 def remove_comments(filepath, comment_list):
     '''Remove the specfied comments in filepath
@@ -38,11 +38,16 @@ def remove_comments(filepath, comment_list):
             
         wfilehandle.write(file_content)
 
-def getlineandcolumn(loc: clang.cindex.SourceLocation):
+def getlineandcolumn(loc):
+    """get line number and column number from source code location.
+    param loc: clang.cindex.SourceLocation
+    """
     return loc.line, loc.column
 
-def generate_childnodes(root: ET.Element, container: CocodeContainer):
+def generate_childnodes(root, container):
     """Generates child nodes from the given root node and container.
+    param root: ET.Element
+    param container: CocodeContainer
     """
     global args
     err_attr = {
@@ -59,7 +64,6 @@ def generate_childnodes(root: ET.Element, container: CocodeContainer):
             filepath = pathlib.Path(filepath)
             filepath = filepath.relative_to(dirpath)
 
-    for filepath, tuplelist in container.items():
         for position in tuplelist:
             line = position[0]
             column = position[1]
@@ -72,7 +76,7 @@ def generate_childnodes(root: ET.Element, container: CocodeContainer):
                 new_error = ET.SubElement(errors, "error", err_attr)
                 ET.SubElement(new_error, "location", loc_attr)
                 
-def writefmtxml(xmlname: str, root: ET.Element):
+def writefmtxml(xmlname, root):
     '''Save the formatted xml document by indentation spaces.
     param xmlname: Str, the name of the xml file to write.
     param root: ET.Element, root Element
@@ -87,16 +91,17 @@ def writefmtxml(xmlname: str, root: ET.Element):
         with open(xmlname, "w") as f:
             f.write(pretty_xml)
 
-def dumpxml(xmlname: str, container: CocodeContainer):
+def dumpxml(xmlname, container):
     '''Dump the xml file according to the format of cppcheck
+    param xmlname: Str, the name of the xml file to write.
+    param container: CocodeContainer.
     '''
     xmlfile = pathlib.Path(xmlname)
-    
     if xmlfile.exists():
         raise OSError(f"The {xmlname} file already exists, Please change the name of dump file or remove the file with the same name.")
     
-    result = ET.Element("results")
-    
+    result = ET.Element("results", attrib={"version":"2"})
+    ET.SubElement(result, "cppcheck", attrib={"version":"1.90"})    #TODO: fix cppcheck element lack problem
     ET.SubElement(result, "errors")
 
     generate_childnodes(result, container)
@@ -104,6 +109,8 @@ def dumpxml(xmlname: str, container: CocodeContainer):
     
 def addtoxml(xmlname: str, container: CocodeContainer):
     '''Add the content to a exists xml file according to the format of cppcheck
+    param xmlname: Str, the name of the xml file to write.
+    param container: CocodeContainer.
     '''
     xmlfile = pathlib.Path(xmlname)
     
@@ -116,9 +123,10 @@ def addtoxml(xmlname: str, container: CocodeContainer):
     generate_childnodes(root, container)
     writefmtxml(xmlname, root)
 
-def cppparser(filename: str) -> CocodeContainer:
+def cppparser(filename) -> CocodeContainer:
 
     '''Parse the comment section of a cpp source file.
+    param filename: str
     '''
     idx = clang.cindex.Index.create()
     raw_tu = idx.parse(filename, args=['-std=c++11'])
@@ -201,7 +209,6 @@ def run(args: argparse.ArgumentParser):
     filename = args.file
     dump_xmlname = args.dump_xml
     addxml_name = args.add_xml
-    removecode = args.remove_cocode
     
     if dirname:
         container = {}
@@ -229,6 +236,7 @@ if __name__ == "__main__":
                            nargs='?',
                            help="Name of directory to process."
     )
+    
     
     argparser.add_argument('--file',
                            help="A single file to process."
