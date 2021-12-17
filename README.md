@@ -11,6 +11,7 @@ The output file can be integrated into the output xml of cppcheck, which can be 
 
 ## Dependencies
 
+[Python3](https://www.python.org/)
 [llvm-project](https://github.com/llvm/llvm-project/tree/main/clang/bindings/python)
 
 ## Install
