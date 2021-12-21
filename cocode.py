@@ -6,8 +6,186 @@ import sys
 import re
 from xml.dom import minidom
 from collections import defaultdict
+import copy
+from lxml import etree
 
 CocodeContainer = defaultdict(list) # k-v type: {filename: list[tuple(line, column)]}
+# new type: filename: list[token]
+
+class Filter:
+    """
+    """
+    def __init__(self, filename, container=defaultdict(list)):
+        self.filename = filename
+        self.idx = clang.cindex.Index.create()
+        self.tu = self.idx.parse(filename, args=["-std=c++11"])
+        self.tokens = self.tu.get_tokens(extent=self.tu.cursor.extent)
+        self.container = container # list of result tokens
+    
+    def getcomments(self):
+        """Get all comments from the source file.
+        """
+        for token in self.tokens:
+            if token.kind.name == "COMMENT":
+                self.container[self.filename].append(token)
+        
+                        
+    
+    def isvaildcode(self, c_tokens):
+        """return True if the comment contains vaild code Section.
+        """
+        isidfr = lambda x: x == "IDENTIFIER"
+        isliteral = lambda x: x == "LITERAL"
+        
+        kindname_list = []
+        for c_t in c_tokens:
+            kindname_list.append(c_t.kind.name)
+        
+        tokens_length = len(kindname_list)
+        if tokens_length == 1:
+            if kindname_list[0] == "PUNCTUATION":
+                return 1
+            else:
+                return 0
+            
+        if tokens_length <= 2:
+            return 0
+        
+        for i in range(tokens_length - 2):
+            # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
+            # FIXME: Wrong judgment in comment "for >32 bit machines"
+            if isidfr(kindname_list[i]) and isidfr(kindname_list[i+2]) and (isidfr(kindname_list[i+1]) or isliteral(kindname_list[i+1])):
+                return 0
+        
+        return 1
+    
+    
+    def CommentedOutcode(self):
+        "filter the commented-out code in self.container"
+        self.getcomments()
+        temp = copy.copy(self.container)
+        #self.container.pop(self.filename)
+        
+        for filename, tokenlist in temp.items():
+            for token in tokenlist:
+                try:
+                    comment_content = token.spelling
+                except UnicodeDecodeError: 
+                    continue
+            
+                noascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
+                if noascii_match:
+                    continue
+                if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
+                    comment_content = comment_content.lstrip('//')
+            
+                if comment_content.startswith("/*") and ("copyright" not in comment_content.lower()):
+                    comment_content = comment_content.lstrip("/*")
+                    comment_content = comment_content.rstrip("*/")
+                
+                idx_comment = clang.cindex.Index.create()
+                c_tu = idx_comment.parse('tmp.cpp',
+                                        args=['-std=c++11'], 
+                                        unsaved_files=[('tmp.cpp', comment_content)],
+                                        options=0
+                )
+                c_tu_tokens = c_tu.get_tokens(extent=c_tu.cursor.extent)
+                
+                if not self.isvaildcode(c_tu_tokens):
+                    self.container[filename].remove(token)
+                
+                
+class XMLProcessor:
+    def __init__(self, container: CocodeContainer):
+        self.container = container      # CocodeContainer: {filepath: list[token]}
+        self.root = None                # ET.Element
+    
+    def generate_childnodes(self, node):
+        """Generates child nodes from the given root node and container.
+        param root: ET.Element
+        param container: CocodeContainer
+        """
+        global args
+        err_attr = {
+            "id": "CommentedoutCode",
+            "severity": "style",
+            "msg": "Section of code should not be commented out.",
+            "verbose": "Section of code should not be commented out."
+        }
+        
+        for filepath, tokenlist in self.container.items():
+            if args.dir:
+                # mode: dir
+                dirpath = pathlib.Path(args.dir)
+                filepath = pathlib.Path(filepath)
+                filepath = filepath.relative_to(dirpath)
+
+            for token in tokenlist:
+                line = token.location.line
+                column = token.location.column
+                loc_attr = {
+                    "file": str(filepath),
+                    'line': str(line),
+                    'column': str(column),
+                }
+                for errors in node.iter("errors"):
+                    new_error = ET.SubElement(errors, "error", err_attr)
+                    ET.SubElement(new_error, "location", loc_attr)
+    
+    def writefmtxml(self, xmlname, node):
+        '''Save the formatted xml document by indentation spaces.
+        param xmlname: Str, the name of the xml file to write.
+        param root: ET.Element, root Element
+        '''
+        
+        '''
+        if sys.version_info.major == 3 and sys.version_info.minor >= 9:
+            # ElementTree update new format xml method in Python 3.9   
+            tree = ET.ElementTree(node)
+            ET.indent(tree)
+            tree.write(xmlname'''
+        
+        pretty_xml = minidom.parseString(ET.tostring(node)).toprettyxml(indent="    ", newl="\r")
+        with open(xmlname, "wb") as f:
+            f.write(pretty_xml.encode('utf-8'))
+            
+        parser = etree.XMLParser(remove_blank_text=True)
+        tree = etree.parse(xmlname, parser)
+        tree.write(xmlname, pretty_print=True, encoding="utf-8")
+
+            
+    def addtoxml(self, xmlname: str):
+        '''Add the content to a exists xml file according to the format of cppcheck
+        param xmlname: Str, the name of the xml file to write.
+        param container: CocodeContainer.
+        '''
+        xmlfile = pathlib.Path(xmlname)
+        
+        if not xmlfile.exists():
+            raise FileNotFoundError(f"Can't find the xml file: {xmlname}")
+        
+        tree = ET.parse(xmlname)
+        self.root = tree.getroot()
+        
+        self.generate_childnodes(self.root)
+        self.writefmtxml(xmlname, self.root) #FIXME: change temp name
+        
+        
+    def dumpxml(self, xmlname: str):
+        '''Dump the xml file according to the format of cppcheck
+        param xmlname: Str, the name of the xml file to write.
+        param container: CocodeContainer.
+        '''
+        xmlfile = pathlib.Path(xmlname)
+        if xmlfile.exists():
+            raise OSError(f"The {xmlname} file already exists, Please change the name of dump file or remove the file with the same name.")
+        
+        result = ET.Element("results", attrib={"version":"2"})
+        ET.SubElement(result, "cppcheck", attrib={"version":"1.90"})    #DONE: fixed cppcheck element lack problem
+        ET.SubElement(result, "errors")
+
+        self.generate_childnodes(result)
+        self.writefmtxml(xmlname, result)
 
 def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c'}):
     '''Get cpp source files from directory
@@ -21,187 +199,10 @@ def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c
             filelist.append(path)
     
     return filelist
-    
-def remove_comments(filepath, comment_list):
-    '''Remove the specfied comments in filepath
-    param filepath: String
-    param comment_list: list[Pathobj]
-    TODO: refactor this method.
-    '''
-    with open(filepath, 'r') as filehandle:
-        file_content = filehandle.read()
-    with open(filepath, 'w') as wfilehandle:
-        for comment_text in comment_list:
-            if "\r\n" in comment_text:
-                comment_text = comment_text.replace('\r\n', '\n')
-            file_content = file_content.replace(comment_text, '')
-            
-        wfilehandle.write(file_content)
 
-def getlineandcolumn(loc):
-    """get line number and column number from source code location.
-    param loc: clang.cindex.SourceLocation
-    """
-    return loc.line, loc.column
-
-def generate_childnodes(root, container):
-    """Generates child nodes from the given root node and container.
-    param root: ET.Element
-    param container: CocodeContainer
-    """
-    global args
-    err_attr = {
-        "id": "CommentedoutCode",
-        "severity": "style",
-        "msg": "Section of code should not be commented out.",
-        "verbose": "Section of code should not be commented out."
-    }
-    
-    for filepath, tuplelist in container.items():
-        if args.dir:
-            # mode: dir
-            dirpath = pathlib.Path(args.dir)
-            filepath = pathlib.Path(filepath)
-            filepath = filepath.relative_to(dirpath)
-
-        for position in tuplelist:
-            line = position[0]
-            column = position[1]
-            loc_attr = {
-                "file": str(filepath),
-                'line': str(line),
-                'column': str(column),
-            }
-            for errors in root.iter("errors"):
-                new_error = ET.SubElement(errors, "error", err_attr)
-                ET.SubElement(new_error, "location", loc_attr)
-                
-def writefmtxml(xmlname, root):
-    '''Save the formatted xml document by indentation spaces.
-    param xmlname: Str, the name of the xml file to write.
-    param root: ET.Element, root Element
-    '''
-    
-    if sys.version_info.major == 3 and sys.version_info.minor >= 9:
-        tree = ET.ElementTree(root)
-        ET.indent(tree)
-        tree.write(xmlname)
-    else:
-        pretty_xml = minidom.parseString(ET.tostring(root)).toprettyxml(indent="    ")
-        with open(xmlname, "w") as f:
-            f.write(pretty_xml)
-
-def dumpxml(xmlname, container):
-    '''Dump the xml file according to the format of cppcheck
-    param xmlname: Str, the name of the xml file to write.
-    param container: CocodeContainer.
-    '''
-    xmlfile = pathlib.Path(xmlname)
-    if xmlfile.exists():
-        raise OSError(f"The {xmlname} file already exists, Please change the name of dump file or remove the file with the same name.")
-    
-    result = ET.Element("results", attrib={"version":"2"})
-    ET.SubElement(result, "cppcheck", attrib={"version":"1.90"})    #TODO: fix cppcheck element lack problem
-    ET.SubElement(result, "errors")
-
-    generate_childnodes(result, container)
-    writefmtxml(xmlname, result)
-    
-def addtoxml(xmlname: str, container: CocodeContainer):
-    '''Add the content to a exists xml file according to the format of cppcheck
-    param xmlname: Str, the name of the xml file to write.
-    param container: CocodeContainer.
-    '''
-    xmlfile = pathlib.Path(xmlname)
-    
-    if not xmlfile.exists():
-        raise FileNotFoundError(f"Can't find the xml file: {xmlname}")
-    
-    tree = ET.parse(xmlname)
-    root = tree.getroot()
-    
-    generate_childnodes(root, container)
-    writefmtxml(xmlname, root)
-
-def cppparser(filename) -> CocodeContainer:
-
-    '''Parse the comment section of a cpp source file.
-    param filename: str
-    '''
-    idx = clang.cindex.Index.create()
-    raw_tu = idx.parse(filename, args=['-std=c++11'])
-    raw_tu_tokens = raw_tu.get_tokens(extent=raw_tu.cursor.extent)
-    cocode_container = defaultdict(list)
-    
-    for r_t in raw_tu_tokens:
-        if r_t.kind.name != "COMMENT":
-            continue
-        
-        try:
-            comment_content = r_t.spelling
-        except UnicodeDecodeError:
-            continue
-        
-        noascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
-        if noascii_match:
-            continue
-        
-        if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
-            comment_content = comment_content.lstrip('//')
-        
-        if comment_content.startswith("/*") and ("copyright" not in comment_content.lower()):
-            comment_content = comment_content.lstrip("/*")
-            comment_content = comment_content.rstrip("*/")
-            
-        idx_comment = clang.cindex.Index.create()
-        tu = idx_comment.parse('tmp.cpp',
-                               args=['-std=c++11'], 
-                               unsaved_files=[('tmp.cpp', comment_content)],
-                               options=0
-        )
-        
-        isEnglishComment = 0
-        isidfr = lambda x: x == "IDENTIFIER"
-        isliteral = lambda x: x == "LITERAL"
-        kindname_list = []
-        tu_tokens = tu.get_tokens(extent=tu.cursor.extent)
-                
-        for t in tu_tokens:
-            kindname_list.append(t.kind.name)
-            
-        length = len(kindname_list)
-        
-        if length == 1 and kindname_list[0] == 'PUNCTUATION':
-            # Single line
-            line, column = getlineandcolumn(r_t.location)            
-            cocode_container[filename].append((line, column))
-            
-            continue
-        if length <= 2:
-            continue
-        
-            
-        for i in range(length - 2):
-            # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
-            # FIXME: Wrong judgment in comment "for >32 bit machines"
-            if isidfr(kindname_list[i]) and isidfr(kindname_list[i+2]) and (isidfr(kindname_list[i+1]) or isliteral(kindname_list[i+1])):
-                isEnglishComment = 1
-                break
-            elif isidfr(kindname_list[i]) and isliteral(kindname_list[i+1]) and isidfr(kindname_list[i+2]):
-                isEnglishComment = 1
-                break
-                
-        if isEnglishComment:
-            continue
-        
-        else:
-            #comment_text = r_t.spelling
-            line, column = getlineandcolumn(r_t.location)
-            cocode_container[filename].append((line, column))
-                        
-    return cocode_container
 
 def run(args: argparse.ArgumentParser):
+    sys.path.append(".")
     from config import libclang_path
     clang.cindex.Config.set_library_file(libclang_path)
 
@@ -211,20 +212,25 @@ def run(args: argparse.ArgumentParser):
     addxml_name = args.add_xml
     
     if dirname:
-        container = {}
         sourcefileList = getfiles_fromdir(dirname)
+        
+        container = defaultdict(list)
         for sourcepath in sourcefileList:
-            cocode_container = cppparser(str(sourcepath))
-            container.update(cocode_container)
-            
+            filter = Filter(str(sourcepath), container)
+            filter.CommentedOutcode()
+            container = filter.container
+         
     elif filename:
-        container = cppparser(filename)
+        filter = Filter(filename)
+        filter.CommentedOutcode()
+        container = filter.container
     
+    xmlprocessor = XMLProcessor(container)
     if dump_xmlname:
-        dumpxml(dump_xmlname, container)
+        xmlprocessor.dumpxml(dump_xmlname)
     
     elif addxml_name:
-        addtoxml(addxml_name, container)
+        xmlprocessor.addtoxml(addxml_name)
                 
     else:
         print("Invaild arguments. Options --help for showing help message.")

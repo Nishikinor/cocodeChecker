@@ -88,6 +88,7 @@ int main(int argc, char *argv[])
 	std::cout << "num points: " << Points->GetNumberOfPoints() << std::endl;
 	std::cout << "num normals: " << Normals->GetNumberOfTuples() << std::endl;
 	
+	// int a = 1;
 	
 	/*vtkPolyData* Polydata = vtkPolyData::New();
 	Polydata->SetPoints(Points);
