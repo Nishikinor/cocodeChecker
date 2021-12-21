@@ -18,7 +18,7 @@ The output file can be integrated into the output xml of cppcheck, which can be 
 ## Install
 
 ```
-pip install libclang
+pip install libclang lxml
 ```
 
 ```
