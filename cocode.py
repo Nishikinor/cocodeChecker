@@ -9,12 +9,14 @@ from collections import defaultdict
 import copy
 from lxml import etree
 
-CocodeContainer = defaultdict(list) # k-v type: {filename: list[tuple(line, column)]}
-# new type: filename: list[token]
+CocodeContainer = defaultdict(list) # k-v type: {filename: list[token]}
 
 class Filter:
     """
+    Extract the required sequence according to the specified rules, 
+    you can customize the rules in this class to extract the sequence what you need.
     """
+    
     def __init__(self, filename, container=defaultdict(list)):
         self.filename = filename
         self.idx = clang.cindex.Index.create()
@@ -38,10 +40,13 @@ class Filter:
         isliteral = lambda x: x == "LITERAL"
         
         kindname_list = []
+        c_tokenlist = []
+        available = [';', '{', '}', '[', ']', '(', ')']
         for c_t in c_tokens:
             kindname_list.append(c_t.kind.name)
+            c_tokenlist.append(c_t)
         
-        tokens_length = len(kindname_list)
+        tokens_length = len(c_tokenlist)
         if tokens_length == 1:
             if kindname_list[0] == "PUNCTUATION":
                 return 1
@@ -53,9 +58,14 @@ class Filter:
         
         for i in range(tokens_length - 2):
             # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
-            # FIXME: Wrong judgment in comment "for >32 bit machines"
             if isidfr(kindname_list[i]) and isidfr(kindname_list[i+2]) and (isidfr(kindname_list[i+1]) or isliteral(kindname_list[i+1])):
                 return 0
+            
+        finalchar = c_tokenlist[-1]
+        #finalchar = c_tokenlist[-1]
+        
+        if finalchar.spelling not in available:
+            return 0
         
         return 1
     
@@ -63,10 +73,12 @@ class Filter:
     def CommentedOutcode(self):
         "filter the commented-out code in self.container"
         self.getcomments()
-        temp = copy.copy(self.container)
-        #self.container.pop(self.filename)
+  
+        temp = list(self.container.items())
+        removelist = []
+        filterfunc_remove = lambda x: x not in removelist
         
-        for filename, tokenlist in temp.items():
+        for filename, tokenlist in temp:
             for token in tokenlist:
                 try:
                     comment_content = token.spelling
@@ -92,8 +104,12 @@ class Filter:
                 c_tu_tokens = c_tu.get_tokens(extent=c_tu.cursor.extent)
                 
                 if not self.isvaildcode(c_tu_tokens):
-                    self.container[filename].remove(token)
-                
+                    #self.container[filename].remove(token)
+                    removelist.append(token)
+                    
+            self.container[filename] = list(filter(filterfunc_remove, self.container[filename]))
+        
+        
                 
 class XMLProcessor:
     def __init__(self, container: CocodeContainer):
@@ -168,7 +184,7 @@ class XMLProcessor:
         self.root = tree.getroot()
         
         self.generate_childnodes(self.root)
-        self.writefmtxml(xmlname, self.root) #FIXME: change temp name
+        self.writefmtxml(xmlname, self.root)
         
         
     def dumpxml(self, xmlname: str):
