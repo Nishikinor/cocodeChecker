@@ -6,7 +6,6 @@ import sys
 import re
 from xml.dom import minidom
 from collections import defaultdict
-import copy
 from lxml import etree
 
 CocodeContainer = defaultdict(list) # k-v type: {filename: list[token]}
@@ -83,15 +82,21 @@ class Filter:
                 try:
                     comment_content = token.spelling
                 except UnicodeDecodeError: 
+                    removelist.append(token)
                     continue
             
                 noascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
                 if noascii_match:
+                    removelist.append(token)
                     continue
-                if comment_content.startswith('//') and ("copyright" not in comment_content.lower()):
+                if "copyright" in comment_content.lower():
+                    removelist.append(token)
+                    continue
+                
+                if comment_content.startswith('//'):
                     comment_content = comment_content.lstrip('//')
             
-                if comment_content.startswith("/*") and ("copyright" not in comment_content.lower()):
+                if comment_content.startswith("/*"):
                     comment_content = comment_content.lstrip("/*")
                     comment_content = comment_content.rstrip("*/")
                 
@@ -104,12 +109,9 @@ class Filter:
                 c_tu_tokens = c_tu.get_tokens(extent=c_tu.cursor.extent)
                 
                 if not self.isvaildcode(c_tu_tokens):
-                    #self.container[filename].remove(token)
                     removelist.append(token)
                     
             self.container[filename] = list(filter(filterfunc_remove, self.container[filename]))
-        
-        
                 
 class XMLProcessor:
     def __init__(self, container: CocodeContainer):
@@ -153,13 +155,6 @@ class XMLProcessor:
         param xmlname: Str, the name of the xml file to write.
         param root: ET.Element, root Element
         '''
-        
-        '''
-        if sys.version_info.major == 3 and sys.version_info.minor >= 9:
-            # ElementTree update new format xml method in Python 3.9   
-            tree = ET.ElementTree(node)
-            ET.indent(tree)
-            tree.write(xmlname'''
         
         pretty_xml = minidom.parseString(ET.tostring(node)).toprettyxml(indent="    ", newl="\r")
         with open(xmlname, "wb") as f:
