@@ -46,7 +46,7 @@ optional arguments:
 
 Scan the whole source directory and output the result to a xml: 
 ```
-python cocode.py --dir tests/ --dump_xml output.xml
+python cocode.py --dir examples/ --dump_xml output.xml
 ```
 
 Append new xml elements in a exists xml file from scan result:
