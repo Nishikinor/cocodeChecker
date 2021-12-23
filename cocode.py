@@ -30,9 +30,7 @@ class Filter:
             if token.kind.name == "COMMENT":
                 self.container[self.filename].append(token)
         
-                        
-    
-    def isvaildcode(self, c_tokens):
+    def isvaildcode(self, c_tokens) -> bool:
         """return True if the comment contains vaild code Section.
         """
         isidfr = lambda x: x == "IDENTIFIER"
@@ -48,57 +46,60 @@ class Filter:
         tokens_length = len(c_tokenlist)
         if tokens_length == 1:
             if kindname_list[0] == "PUNCTUATION":
-                return 1
+                return True
             else:
-                return 0
+                return False
             
         if tokens_length <= 2:
-            return 0
+            return False
         
         for i in range(tokens_length - 2):
-            # Model: If the identifier appears three times continuously, it can be considered as an English comment block.
+            # Model: If the identifier appears three times continuously, it can be considered as an English comment block.           
             if isidfr(kindname_list[i]) and isidfr(kindname_list[i+2]) and (isidfr(kindname_list[i+1]) or isliteral(kindname_list[i+1])):
-                return 0
+                return False
             
         finalchar = c_tokenlist[-1]
         #finalchar = c_tokenlist[-1]
         
         if finalchar.spelling not in available:
-            return 0
+            return False
         
-        return 1
+        return True
     
+    def comment_parser(self, token):
+        """Parse the given comment token and turn it into a comment content.
+        """
+        try:
+            comment_content = token.spelling
+        except UnicodeDecodeError:
+            return None
+        
+        nonascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
+        if nonascii_match:
+            return None
+        if "copyright" in comment_content.lower():
+            return None
+        if comment_content.startswith("//"):
+            comment_content = comment_content.lstrip('//')
+        if comment_content.startswith("/*"):
+            comment_content = comment_content.lstrip("/*")
+            comment_content = comment_content.rstrip("*/")
+            
+        return comment_content
     
     def CommentedOutcode(self):
         "filter the commented-out code in self.container"
         self.getcomments()
-  
         temp = list(self.container.items())
         removelist = []
         filterfunc_remove = lambda x: x not in removelist
         
         for filename, tokenlist in temp:
             for token in tokenlist:
-                try:
-                    comment_content = token.spelling
-                except UnicodeDecodeError: 
+                comment_content = self.comment_parser(token)
+                if comment_content == "None":
                     removelist.append(token)
                     continue
-            
-                noascii_match = re.match(r"[^\x00-\x7f]", comment_content, flags=re.UNICODE | re.IGNORECASE)
-                if noascii_match:
-                    removelist.append(token)
-                    continue
-                if "copyright" in comment_content.lower():
-                    removelist.append(token)
-                    continue
-                
-                if comment_content.startswith('//'):
-                    comment_content = comment_content.lstrip('//')
-            
-                if comment_content.startswith("/*"):
-                    comment_content = comment_content.lstrip("/*")
-                    comment_content = comment_content.rstrip("*/")
                 
                 idx_comment = clang.cindex.Index.create()
                 c_tu = idx_comment.parse('tmp.cpp',
@@ -162,7 +163,7 @@ class XMLProcessor:
             
         parser = etree.XMLParser(remove_blank_text=True)
         tree = etree.parse(xmlname, parser)
-        tree.write(xmlname, pretty_print=True, encoding="utf-8")
+        tree.write(xmlname, xml_declaration=True, pretty_print=True, encoding="utf-8")
 
             
     def addtoxml(self, xmlname: str):
@@ -189,6 +190,7 @@ class XMLProcessor:
         '''
         xmlfile = pathlib.Path(xmlname)
         if xmlfile.exists():
+            
             raise OSError(f"The {xmlname} file already exists, Please change the name of dump file or remove the file with the same name.")
         
         result = ET.Element("results", attrib={"version":"2"})

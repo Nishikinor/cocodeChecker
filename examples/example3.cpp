@@ -110,7 +110,6 @@ int main()
 
 	printf( "%4i : ", ii );
 	
-	
 
 	void* temp;
 	temp=gsl_vector_alloc(1);
