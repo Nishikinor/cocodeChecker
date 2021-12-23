@@ -27,7 +27,16 @@ git clone https://github.com/Nishikinor/cocodeChecker.git
 
 ## Usage
 
-Set the local libclang_path in your config.py 
+Download llvm, then set the local libclang path in environment variable.
+```
+# Windows
+set CLANG_LIBRARY_PATH="C:\path\to\your\libclang.dll"
+
+# Linux
+export CLANG_LIBRARY_PATH="/path/to/your/libclang.so"
+```
+
+Then you can use it from the command line.
 ```
 python cocode.py -h
 usage: Remove the comment-out cpp code [-h] [--dir [DIR]] [--file FILE] [--dump_xml DUMP_XML] [--add_xml ADD_XML] [--remove_cocode REMOVE_COCODE]

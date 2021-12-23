@@ -4,6 +4,7 @@ import argparse
 import xml.etree.ElementTree as ET
 import sys
 import re
+import os
 from xml.dom import minidom
 from collections import defaultdict
 from lxml import etree
@@ -187,12 +188,7 @@ class XMLProcessor:
         '''Dump the xml file according to the format of cppcheck
         param xmlname: Str, the name of the xml file to write.
         param container: CocodeContainer.
-        '''
-        xmlfile = pathlib.Path(xmlname)
-        if xmlfile.exists():
-            
-            raise OSError(f"The {xmlname} file already exists, Please change the name of dump file or remove the file with the same name.")
-        
+        '''        
         result = ET.Element("results", attrib={"version":"2"})
         ET.SubElement(result, "cppcheck", attrib={"version":"1.90"})    #DONE: fixed cppcheck element lack problem
         ET.SubElement(result, "errors")
@@ -216,8 +212,8 @@ def getfiles_fromdir(dirname, extensions={'.cpp', '.hpp', '.cc', '.h', 'cxx', 'c
 
 def run(args: argparse.ArgumentParser):
     sys.path.append(".")
-    from config import libclang_path
-    clang.cindex.Config.set_library_file(libclang_path)
+    if "CLANG_LIBRARY_PATH" in os.environ:
+        clang.cindex.Config.set_library_file(os.environ["CLANG_LIBRARY_PATH"])
 
     dirname = args.dir
     filename = args.file

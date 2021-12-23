@@ -1,9 +1,10 @@
 
 import clang.cindex
-import config
 import cocode
+import os
 
-clang.cindex.Config.set_library_file(config.libclang_path)
+if "CLANG_LIBRARY_PATH" in os.environ:
+    clang.cindex.Config.set_library_file(os.environ["CLANG_LIBRARY_PATH"])
 
 
 def get_tokens(comment_content):
